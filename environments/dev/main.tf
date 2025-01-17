@@ -29,7 +29,7 @@ module "eks" {
   min_size       = 1
   max_size       = 2
   desired_size   = 1
-  capacity_type  = "SPOT" # Usando spot instances para desarrollo
+  capacity_type  = "SPOT" # Using SPOT instances
 
   tags = {
     Team    = "platform"
