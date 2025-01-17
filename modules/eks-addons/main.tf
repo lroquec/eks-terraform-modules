@@ -15,27 +15,7 @@ resource "aws_iam_policy" "cluster_autoscaler" {
   name        = "${var.cluster_name}-cluster-autoscaler"
   path        = "/"
   description = "EKS cluster-autoscaler policy"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "autoscaling:DescribeAutoScalingGroups",
-          "autoscaling:DescribeAutoScalingInstances",
-          "autoscaling:DescribeInstances",
-          "autoscaling:DescribeLaunchConfigurations",
-          "autoscaling:DescribeTags",
-          "autoscaling:SetDesiredCapacity",
-          "autoscaling:TerminateInstanceInAutoScalingGroup",
-          "ec2:DescribeLaunchTemplateVersions",
-          "ec2:DescribeInstanceTypes"
-        ]
-        Effect   = "Allow"
-        Resource = "*"
-      }
-    ]
-  })
+  policy      = file("${path.module}/policies/cluster-autoscaler-policy.json")
 
   tags = var.tags
 }
@@ -96,8 +76,7 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
 
   name        = "${var.cluster_name}-aws-load-balancer-controller"
   description = "Policy for AWS Load Balancer Controller"
-
-  policy = file("${path.module}/policies/aws-load-balancer-controller-policy.json")
+  policy      = file("${path.module}/policies/aws-load-balancer-controller-policy.json")
 
   tags = var.tags
 }
@@ -158,31 +137,7 @@ resource "aws_iam_policy" "external_dns" {
 
   name        = "${var.cluster_name}-external-dns"
   description = "Policy for External DNS"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "route53:ChangeResourceRecordSets"
-        ]
-        Resource = [
-          "arn:aws:route53:::hostedzone/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "route53:ListHostedZones",
-          "route53:ListResourceRecordSets"
-        ]
-        Resource = [
-          "*"
-        ]
-      }
-    ]
-  })
+  policy      = file("${path.module}/policies/external-dns-policy.json")
 
   tags = var.tags
 }
