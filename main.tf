@@ -35,3 +35,19 @@ module "eks_addons" {
     Team        = "platform"
   }
 }
+
+module "eks_users" {
+  source = "../../modules/eks-users"
+
+  cluster_name = module.eks-dev.cluster_name
+  environment  = "dev"
+
+  admin_users     = ["admin1", "admin2"]
+  developer_users = ["dev1", "dev2"]
+  readonly_users  = ["viewer1"]
+
+  tags = {
+    Environment = "dev"
+    Team        = "platform"
+  }
+}
