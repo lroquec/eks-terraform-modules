@@ -15,3 +15,23 @@ module "eks_dev" {
     Project = "kubernetes"
   }
 }
+
+module "eks_addons" {
+  source = "../../modules/eks-addons"
+
+  cluster_name                       = module.eks_dev.cluster_name
+  cluster_endpoint                   = module.eks_dev.cluster_endpoint
+  cluster_certificate_authority_data = module.eks_dev.cluster_certificate_authority_data
+  oidc_provider_arn                 = module.eks_dev.oidc_provider_arn
+
+  # Enable/Disable Addons
+  enable_metrics_server            = true
+  enable_cluster_autoscaler       = true
+  enable_load_balancer_controller = true
+  enable_external_dns            = true
+
+  tags = {
+    Environment = "dev"
+    Team        = "platform"
+  }
+}
