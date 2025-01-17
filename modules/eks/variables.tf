@@ -77,7 +77,12 @@ variable "tags" {
 }
 
 variable "capacity_type" {
-  description = "Capacity type for the node group"
+  description = "Type of capacity associated with the EKS Node Group. Valid values: ON_DEMAND, SPOT"
   type        = string
-  default     = "SPOT" ##  for production ON_DEMAND
+  default     = "ON_DEMAND"
+  
+  validation {
+    condition     = contains(["ON_DEMAND", "SPOT"], var.capacity_type)
+    error_message = "Capacity type must be either ON_DEMAND or SPOT"
+  }
 }
