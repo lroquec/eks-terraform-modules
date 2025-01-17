@@ -1,3 +1,4 @@
+data "aws_caller_identity" "current" {}
 locals {
   admin_role_name     = "${var.cluster_name}-admin-role"
   developer_role_name = "${var.cluster_name}-developer-role"
