@@ -1,8 +1,8 @@
 module "eks" {
   source = "../../modules/eks"
 
-  environment    = "dev"
-  cluster_name   = "dev-cluster"
+  environment     = "dev"
+  cluster_name    = "dev-cluster"
   cluster_version = "1.31"
 
   vpc_cidr = "10.0.0.0/16"
@@ -26,10 +26,10 @@ module "eks" {
   }
 
   instance_types = ["t3.medium"]
-  min_size      = 1
-  max_size      = 5
-  desired_size  = 2
-  capacity_type = "SPOT"  # Usando spot instances para desarrollo
+  min_size       = 1
+  max_size       = 5
+  desired_size   = 2
+  capacity_type  = "SPOT" # Usando spot instances para desarrollo
 
   tags = {
     Team    = "platform"
@@ -43,12 +43,12 @@ module "eks_addons" {
   cluster_name                       = module.eks.cluster_name
   cluster_endpoint                   = module.eks.cluster_endpoint
   cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
-  oidc_provider_arn                 = module.eks.oidc_provider_arn
+  oidc_provider_arn                  = module.eks.oidc_provider_arn
 
-  enable_metrics_server            = true
+  enable_metrics_server           = true
   enable_cluster_autoscaler       = true
   enable_load_balancer_controller = true
-  enable_external_dns            = true
+  enable_external_dns             = true
 
   tags = {
     Environment = "dev"
