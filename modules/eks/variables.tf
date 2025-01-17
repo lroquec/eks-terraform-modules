@@ -75,3 +75,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "capacity_type" {
+  description = "Capacity type for the node group"
+  type        = string
+  default     = "SPOT" ##  for production ON_DEMAND
+}
