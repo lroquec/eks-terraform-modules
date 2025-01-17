@@ -27,8 +27,8 @@ module "eks" {
 
   instance_types = ["t3.medium"]
   min_size       = 1
-  max_size       = 5
-  desired_size   = 2
+  max_size       = 2
+  desired_size   = 1
   capacity_type  = "SPOT" # Usando spot instances para desarrollo
 
   tags = {
