@@ -28,20 +28,34 @@ resource "aws_iam_role" "cluster_autoscaler" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRoleWithWebIdentity"
       Effect = "Allow"
       Principal = {
         Federated = var.oidc_provider_arn
       }
+      Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${replace(var.oidc_provider_arn, "/^(.*provider/)/", "")}:sub" = "system:serviceaccount:kube-system:cluster-autoscaler"
+          "${replace(var.oidc_provider_arn, "/^(.*provider/)/", "")}:aud" : "sts.amazonaws.com",
+          "${replace(var.oidc_provider_arn, "/^(.*provider/)/", "")}:sub" : "system:serviceaccount:kube-system:cluster-autoscaler"
         }
       }
     }]
   })
 
   tags = var.tags
+}
+
+# Ensure the service account exists and is properly configured
+resource "kubernetes_service_account" "cluster_autoscaler" {
+  count = var.enable_cluster_autoscaler ? 1 : 0
+  
+  metadata {
+    name      = "cluster-autoscaler"
+    namespace = "kube-system"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.cluster_autoscaler[0].arn
+    }
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
@@ -51,8 +65,40 @@ resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
   role       = aws_iam_role.cluster_autoscaler[0].name
 }
 
+# Get cluster information for version validation
+data "aws_eks_cluster" "this" {
+  name = var.cluster_name
+}
+
+locals {
+  # Map of EKS versions to their compatible Cluster Autoscaler versions
+  cluster_autoscaler_versions = {
+    "1.29" = "v1.29."
+    "1.30" = "v1.30."
+    "1.31" = "v1.31."
+    "1.32" = "v1.32."
+  }
+
+  eks_major_minor = regex("^(\\d+\\.\\d+)", data.aws_eks_cluster.this.version)[0]
+  is_version_supported = contains(keys(local.cluster_autoscaler_versions), local.eks_major_minor)
+  compatible_ca_version = local.is_version_supported ? local.cluster_autoscaler_versions[local.eks_major_minor] : null
+}
+# Add validation check
+# Version validation
+resource "null_resource" "version_validation" {
+  count = var.enable_cluster_autoscaler ? 1 : 0
+
+  lifecycle {
+    precondition {
+      condition     = local.is_version_supported
+      error_message = "EKS version ${local.eks_major_minor} is not supported. Supported versions are: ${join(", ", keys(local.cluster_autoscaler_versions))}"
+    }
+  }
+}
 resource "helm_release" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
+
+  depends_on = [null_resource.version_validation]
 
   name       = "cluster-autoscaler"
   repository = "https://kubernetes.github.io/autoscaler"
@@ -65,8 +111,50 @@ resource "helm_release" "cluster_autoscaler" {
   }
 
   set {
+    name  = "image.tag"
+    value = "${local.compatible_ca_version}0"  # Using .0 as the patch version
+  }
+
+  set {
     name  = "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = aws_iam_role.cluster_autoscaler[0].arn
+  }
+
+  # Resource configurations
+  set {
+    name  = "resources.limits.cpu"
+    value = "200m"
+  }
+
+  set {
+    name  = "resources.limits.memory"
+    value = "512Mi"
+  }
+
+  set {
+    name  = "resources.requests.cpu"
+    value = "100m"
+  }
+
+  set {
+    name  = "resources.requests.memory"
+    value = "256Mi"
+  }
+
+  # Improved probe configuration
+  set {
+    name  = "livenessProbe.initialDelaySeconds"
+    value = "120"
+  }
+
+  set {
+    name  = "livenessProbe.periodSeconds"
+    value = "20"
+  }
+
+  set {
+    name  = "readinessProbe.initialDelaySeconds"
+    value = "30"
   }
 }
 
