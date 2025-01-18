@@ -1,18 +1,18 @@
 # Configure kubectl
 aws eks update-kubeconfig --region us-east-1 --name dev-cluster
 
-# Verify Nodes
-kubectl describe nodes | grep -i taint
-kubectl describe nodes | grep -i condition -A 5
-
 # Verify connection
 kubectl get nodes
 kubectl get pods -A
 
+# Verify Nodes
+kubectl describe nodes | grep -i taint
+kubectl describe nodes | grep -i condition -A 5
+
 # Verify addons
 # Metrics Server
 kubectl get deployment metrics-server -n kube-system
-kubectl top nodes  # Si funciona, metrics-server está operativo
+kubectl top nodes  # Should return CPU and Memory usage
 
 # AWS Load Balancer Controller
 kubectl get deployment aws-load-balancer-controller -n kube-system
@@ -43,24 +43,29 @@ kubectl expose deployment test-lb --port=80 --type=LoadBalancer
 kubectl get svc test-lb -w
 
 # Verify Load Balancer DNS
-kubectl create ingress test-dns --rule="test.lroquec.com/*=test-service:80"
+kubectl delete service test-lb
+kubectl expose deployment test-lb --type=ClusterIP --port=80
+kubectl create ingress test-dns \
+  --class=alb \
+  --rule="test.lroquec.com/*=test-lb:80" \
+  --annotation alb.ingress.kubernetes.io/scheme=internet-facing \
+  --annotation alb.ingress.kubernetes.io/target-type=ip
 
 # Verify Route 53 record
 aws route53 list-resource-record-sets --hosted-zone-id <TU_HOSTED_ZONE_ID> | grep test.lroquec.com
 
 # Users and Roles test
-aws eks get-token --cluster-name dev-cluster --role-arn <ADMIN_ROLE_ARN>
-kubectl auth can-i "*" "*"  # Should return yes
+# Admin role
+kubectl auth can-i list pods --all-namespaces --as=admin:admin-session --as-group=system:masters  # Should return yes
 
 # Developer role
-aws eks get-token --cluster-name dev-cluster --role-arn <DEVELOPER_ROLE_ARN>
-kubectl auth can-i create pod -n kube-system # Should return no
-kubectl auth can-i create pod -n dev # Should return yes
+kubectl auth can-i list pods -n dev --as=developer:developer-session --as-group=eks-developer-group  # Should return yes
+kubectl auth can-i list pods -n default --as=developer:developer-session --as-group=eks-developer-group  # Should return no
 
 # Viewer role
-aws eks get-token --cluster-name dev-cluster --role-arn <READONLY_ROLE_ARN>
-kubectl auth can-i get pods -A  # Should return yes
-kubectl auth can-i create pod default # Should return no
+kubectl auth can-i list pods -n dev --as=readonly:readonly-session --as-group=eks-readonly-group # Should return yes
+kubectl auth can-i get pods -A --as=readonly:readonly-session --as-group=eks-readonly-group  # Should return yes
+kubectl auth can-i create pod --as=readonly:readonly-session --as-group=eks-readonly-group # Should return no
 
 # Logs and events
 # Verify logs from critical components
