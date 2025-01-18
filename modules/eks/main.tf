@@ -72,13 +72,13 @@ module "eks" {
     aws-ebs-csi-driver = {
       most_recent = true
     }
-    # This costs money
+    # This costs money and requires more resources
     amazon-cloudwatch-observability = {
       most_recent = true
     }
-    aws-efs-csi-driver = {
-      most_recent = true
-    }
+    # aws-efs-csi-driver = {
+    #   most_recent = true
+    # }
   }
 
   # Cluster access entry
