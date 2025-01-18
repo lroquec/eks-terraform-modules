@@ -117,9 +117,17 @@ module "eks_users" {
   cluster_name = module.eks.cluster_name
   environment  = "dev"
 
-  admin_users     = ["admin1", "admin2"]
-  developer_users = ["dev1", "dev2"]
-  readonly_users  = ["viewer1"]
+  admin_role     = "eks-admin"
+  developer_role = "eks-developer"
+  readonly_role  = "eks-viewer"
+
+  admin_users     = var.eks_admin_users
+  developer_users = var.eks_developer_users
+  readonly_users  = var.eks_readonly_users
+
+  create_admin_users     = false
+  create_developer_users = true
+  create_readonly_users  = true
 
   tags = {
     Environment = "dev"
