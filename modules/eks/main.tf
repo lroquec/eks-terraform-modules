@@ -81,6 +81,9 @@ module "eks" {
     }
   }
 
+  # Cluster access entry
+  # To add the current caller identity as an administrator
+  enable_cluster_creator_admin_permissions = true
   eks_managed_node_group_defaults = {
     ami_type       = "AL2023_x86_64_STANDARD"
     instance_types = var.instance_types
@@ -110,4 +113,27 @@ module "eks" {
   }
 
   tags = local.common_tags
+}
+
+resource "null_resource" "wait_for_cluster" {
+  depends_on = [module.eks]
+}
+
+resource "null_resource" "update_desired_size" {
+  triggers = {
+    desired_size = var.desired_size
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+
+    command = <<-EOT
+      aws eks update-nodegroup-config \
+        --cluster-name ${module.eks.cluster_name} \
+        --nodegroup-name ${element(split(":", module.eks.eks_managed_node_groups["main"].node_group_id), 1)} \
+        --scaling-config desiredSize=${var.desired_size} \
+        --region ${var.region} \
+        --profile default
+    EOT
+  }
 }
