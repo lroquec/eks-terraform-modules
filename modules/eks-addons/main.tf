@@ -20,6 +20,10 @@ resource "aws_iam_policy" "cluster_autoscaler" {
   tags = var.tags
 }
 
+locals {
+  oidc_url = element(split("oidc-provider/", var.oidc_provider_arn), 1)
+}
+
 resource "aws_iam_role" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
 
@@ -35,8 +39,8 @@ resource "aws_iam_role" "cluster_autoscaler" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${replace(var.oidc_provider_arn, "/^(.*provider/)/", "")}:aud" : "sts.amazonaws.com",
-          "${replace(var.oidc_provider_arn, "/^(.*provider/)/", "")}:sub" : "system:serviceaccount:kube-system:cluster-autoscaler"
+          "${local.oidc_url}:aud" : "sts.amazonaws.com",
+          "${local.oidc_url}:sub" : "system:serviceaccount:kube-system:cluster-autoscaler-aws-cluster-autoscaler"
         }
       }
     }]
@@ -50,7 +54,7 @@ resource "kubernetes_service_account" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
   
   metadata {
-    name      = "cluster-autoscaler"
+    name      = "cluster-autoscaler-aws-cluster-autoscaler"
     namespace = "kube-system"
     annotations = {
       "eks.amazonaws.com/role-arn" = aws_iam_role.cluster_autoscaler[0].arn
