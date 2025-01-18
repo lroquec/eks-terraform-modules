@@ -14,7 +14,7 @@ This repository contains a collection of Terraform modules for deploying and man
 │   ├── dev/                     # Development environment
 │   ├── staging/                 # Staging environment
 │   └── prod/                    # Production environment
-└── basic-verifications.sh       # Verification script
+└── basic-verifications.sh       # Verification steps with kubectl
 ```
 
 ## Modules Overview
