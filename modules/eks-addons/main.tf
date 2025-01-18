@@ -40,26 +40,13 @@ resource "aws_iam_role" "cluster_autoscaler" {
       Condition = {
         StringEquals = {
           "${local.oidc_url}:aud" : "sts.amazonaws.com",
-          "${local.oidc_url}:sub" : "system:serviceaccount:kube-system:cluster-autoscaler-aws-cluster-autoscaler"
+          "${local.oidc_url}:sub" : "system:serviceaccount:kube-system:cluster-autoscaler-aws"
         }
       }
     }]
   })
 
   tags = var.tags
-}
-
-# Ensure the service account exists and is properly configured
-resource "kubernetes_service_account" "cluster_autoscaler" {
-  count = var.enable_cluster_autoscaler ? 1 : 0
-  
-  metadata {
-    name      = "cluster-autoscaler-aws-cluster-autoscaler"
-    namespace = "kube-system"
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.cluster_autoscaler[0].arn
-    }
-  }
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
@@ -117,6 +104,16 @@ resource "helm_release" "cluster_autoscaler" {
   set {
     name  = "image.tag"
     value = "${local.compatible_ca_version}0"  # Using .0 as the patch version
+  }
+
+  set {
+    name  = "rbac.serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.name"
+    value = "cluster-autoscaler-aws"
   }
 
   set {
