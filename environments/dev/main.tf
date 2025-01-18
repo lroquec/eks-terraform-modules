@@ -38,7 +38,8 @@ module "eks" {
 }
 
 module "eks_addons" {
-  source = "../../modules/eks-addons"
+  source     = "../../modules/eks-addons"
+  aws_region = "us-east-1"
 
   cluster_name                       = module.eks.cluster_name
   cluster_endpoint                   = module.eks.cluster_endpoint
@@ -55,21 +56,33 @@ module "eks_addons" {
     Team        = "platform"
     Project     = "kubernetes-platform"
   }
+  depends_on = [module.eks]
 }
 
 module "eks_users" {
-  source = "../../modules/eks-users"
+  source     = "../../modules/eks-users"
+  aws_region = "us-east-1"
 
   cluster_name = module.eks.cluster_name
   environment  = "dev"
 
-  admin_users     = ["admin1"]
-  developer_users = ["dev1"]
-  readonly_users  = ["viewer1"]
+  # User configuration
+  admin_role     = "eks-admin"
+  developer_role = "eks-developer"
+  readonly_role  = "eks-viewer"
+
+  admin_users     = var.eks_admin_users
+  developer_users = var.eks_developer_users
+  readonly_users  = var.eks_readonly_users
+
+  create_admin_users     = var.create_admin_users
+  create_developer_users = var.create_developer_users
+  create_readonly_users  = var.create_readonly_users
 
   tags = {
     Environment = "dev"
     Team        = "platform"
     Project     = "kubernetes-platform"
   }
+  depends_on = [module.eks]
 }
