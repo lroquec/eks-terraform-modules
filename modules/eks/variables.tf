@@ -86,3 +86,9 @@ variable "capacity_type" {
     error_message = "Capacity type must be either ON_DEMAND or SPOT"
   }
 }
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
